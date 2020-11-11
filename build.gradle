@@ -1,0 +1,55 @@
+plugins {
+	id 'org.springframework.boot' version '2.3.4.RELEASE'
+	id 'io.spring.dependency-management' version '1.0.10.RELEASE'
+	id 'java'
+}
+
+group = 'dotsecurity'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '11'
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.thymeleaf.extras:thymeleaf-extras-springsecurity5'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
+	testImplementation('org.springframework.boot:spring-boot-starter-test') {
+		exclude group: 'org.junit.vintage', module: 'junit-vintage-engine'
+	}
+	testImplementation 'org.springframework.security:spring-security-test'
+
+//  mysql
+	compile('mysql:mysql-connector-java')
+
+
+// jsp
+	compile group: 'org.apache.tomcat.embed', name: 'tomcat-embed-jasper', version: '9.0.39'
+	compile group: 'javax.servlet', name: 'jstl', version: '1.2'
+	compile group: 'org.springframework.security', name: 'spring-security-taglibs', version: '5.1.13.RELEASE'
+
+//	jwt
+	implementation 'io.jsonwebtoken:jjwt-api:0.10.7'
+	runtime 'io.jsonwebtoken:jjwt-impl:0.10.7'
+	runtime 'io.jsonwebtoken:jjwt-jackson:0.10.7'
+
+
+
+}
+
+test {
+	useJUnitPlatform()
+}
