@@ -1,6 +1,15 @@
 # Springboot_security_login
 
 
-### Stack
+### 기술 Stack
 Springboot 2.3.4 RELEASE
 jjwt 0.10.7
+
+
+
+###구현 기능
+
+commit message : 
+1. signup (ROLE_USER 권한 설정)
+2. login (ID/PW 인증 -> jwt token 발급)
+3. jwt token 인가 (@PreAuthorize /@ Secured)
