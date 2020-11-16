@@ -1,9 +1,11 @@
 package dotsecurity.login.domain;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import lombok.Getter;
 import org.hibernate.annotations.NaturalId;
 
 import javax.persistence.*;
+import java.util.List;
 
 @Entity
 @Getter
@@ -17,4 +19,13 @@ public class Role {
     @Enumerated(EnumType.STRING)
     @NaturalId
     private RoleName name;
+
+//    @OneToMany(mappedBy = "role")
+//    private List<UserHasRole> lists;
+
+
+//    @ManyToOne
+//    @JoinColumn(name = "parent_user_id")
+//    private Role parentRole;
+
 }

@@ -58,7 +58,7 @@ public class JwtTokenProvider {
                 .parseClaimsJws(token)
                 .getBody();
 
-        log.info("userid from jwt : " + claims.getId() + "," + claims.getSubject());
+        log.info("userId from jwt : " + claims.getSubject());
 
         return Long.parseLong(claims.getSubject());
     }

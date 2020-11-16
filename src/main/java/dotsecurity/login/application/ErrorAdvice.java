@@ -23,6 +23,7 @@ public class ErrorAdvice {
         return "{Email is already registerd}";
     }
 
+
     /**
      * 로그인 세션 : 이메일이 존재하지 않을 때 예외처리
      */
@@ -32,8 +33,6 @@ public class ErrorAdvice {
     public String handleEmailNotExisted(){
         return "{}";
     }
-
-
 
     /**
      * 로그인 세션 : 패스워드 틀렸을 때 예외처리

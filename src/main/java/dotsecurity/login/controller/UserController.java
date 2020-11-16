@@ -2,10 +2,13 @@ package dotsecurity.login.controller;
 
 import dotsecurity.login.application.AppException;
 import dotsecurity.login.application.exception.EmailExistedException;
+import dotsecurity.login.application.exception.EmailNotExistedException;
 import dotsecurity.login.domain.Role;
 import dotsecurity.login.domain.RoleName;
 import dotsecurity.login.domain.User;
+import dotsecurity.login.domain.UserHasRole;
 import dotsecurity.login.domain.repository.RoleRepository;
+import dotsecurity.login.domain.repository.UserHasRoleRepository;
 import dotsecurity.login.domain.repository.UserRepository;
 import dotsecurity.login.network.Header;
 import dotsecurity.login.network.request.UserApiRequest;
@@ -44,10 +47,13 @@ public class UserController {
     @Autowired
     private RoleRepository roleRepository;
 
+    @Autowired
+    private UserHasRoleRepository userHasRoleRepository;
+
     @GetMapping("")
     @Secured("ROLE_USER")
     @PreAuthorize("hasRole('USER')")
-    public String home(){
+    public String home() {
         return "hi hello gonizziwa";
     }
 
@@ -56,22 +62,16 @@ public class UserController {
         UserApiRequest userData = request.getData();
         Optional<User> existed = userRepository.findByEmail(userData.getEmail());
 
-        if(existed.isPresent()){
+        if (existed.isPresent()) {
             return true;
         }
 
         userService.checkEmail(request);
         return false;
 
-//        email.sender("asdhtml");
-
     }
 
 
-//    @PostMapping("/email/signup")
-//    public Header<UserApiResponse> create(@RequestBody Header<UserApiRequest> request) {
-//        return userService.create(request);
-//    }
 
     @PostMapping("/signup")
     public Header<UserApiResponse> create(@Valid @RequestBody Header<UserApiRequest> request) {
@@ -86,23 +86,41 @@ public class UserController {
 
         String encodedPassword = passwordEncoder.encode(userData.getPassword());
 
-        Role userRole = roleRepository.findByName(RoleName.ROLE_USER)
-                .orElseThrow(() -> new AppException("User Role not set."));
 
 
         User newUser = User.builder()
                 .email(userData.getEmail())
                 .name(userData.getName())
                 .password(encodedPassword)
-                .roles(Collections.singleton(userRole))
                 .build();
 
-        User returnData = userRepository.save(newUser);
 
-        return Header.OK(response(returnData));
+        User returnData1 = userRepository.save(newUser);
+
+        createUserRole(returnData1.getId());
+
+
+        return Header.OK(response(returnData1));
     }
 
 
+    public UserHasRole createUserRole(Long userId){
+        User user = userRepository.findById(userId)
+                .orElseThrow(
+                        ()-> new EmailNotExistedException("userId")
+                );
+        Role role = roleRepository.findByName(RoleName.ROLE_USER)
+                .orElseThrow(
+                        ()-> new EmailNotExistedException("roleId")
+                );
+
+        UserHasRole userHasRole = UserHasRole.builder()
+                    .role(role)
+                    .user(user)
+                    .build();
+
+        return userHasRoleRepository.save(userHasRole);
+    }
 
 
     public UserApiResponse response(User user) {
@@ -112,14 +130,12 @@ public class UserController {
                 .email(user.getEmail())
                 .name(user.getName())
                 .password(user.getPassword())
-                .roles(user.getRoles())
+                .roleList(user.getUserRoles())
                 .build();
 
 
         return userApiResponse;
     }
-
-
 
 
 }

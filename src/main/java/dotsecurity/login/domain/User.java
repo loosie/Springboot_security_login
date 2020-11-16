@@ -34,11 +34,24 @@ public class User  {
 
     private Integer isArtist;
 
-    @ManyToMany(fetch = FetchType.LAZY)
-    @JoinTable(name = "user_role",
-                joinColumns = @JoinColumn(name = "user_id"),
-                inverseJoinColumns = @JoinColumn(name = "role_id"))
-    private Set<Role> roles = new HashSet<>();
+//    @ManyToMany(fetch = FetchType.LAZY)
+//    @JoinTable(name = "user_role",
+//                joinColumns = @JoinColumn(name = "user_id"),
+//                inverseJoinColumns = @JoinColumn(name = "role_id"))
+//    private Set<Role> roles = new HashSet<>();
+
+    @OneToMany(mappedBy = "user")
+    private List<UserHasRole> userRoles;
+
+    //==생성 메서드==//
+
+
+    //==연관관계 메서드==//
+    public void setUserRoles(UserHasRole userRole){
+        userRoles.add(userRole);
+        userRole.setUser(this);
+    }
+
 
 
 }

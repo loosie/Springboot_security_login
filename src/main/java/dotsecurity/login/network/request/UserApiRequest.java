@@ -1,6 +1,7 @@
 package dotsecurity.login.network.request;
 
 import dotsecurity.login.domain.Role;
+import dotsecurity.login.domain.UserHasRole;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -8,6 +9,7 @@ import lombok.NoArgsConstructor;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.EntityListeners;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -28,6 +30,6 @@ public class UserApiRequest {
 
     private String password;
 
-    private Set<Role> roles;
+    private List<UserHasRole> roleList;
 
 }
