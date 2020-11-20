@@ -1,33 +1,27 @@
 package dotsecurity.login.controller;
 
-import dotsecurity.login.application.AppException;
 import dotsecurity.login.application.exception.EmailExistedException;
-import dotsecurity.login.application.exception.EmailNotExistedException;
-import dotsecurity.login.domain.Role;
-import dotsecurity.login.domain.RoleName;
 import dotsecurity.login.domain.User;
-import dotsecurity.login.domain.UserHasRole;
-import dotsecurity.login.domain.repository.RoleRepository;
-import dotsecurity.login.domain.repository.UserHasRoleRepository;
 import dotsecurity.login.domain.repository.UserRepository;
 import dotsecurity.login.network.Header;
+import dotsecurity.login.network.request.EmailConfirmApiRequest;
 import dotsecurity.login.network.request.UserApiRequest;
 import dotsecurity.login.network.response.UserApiResponse;
 import dotsecurity.login.service.UserService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.annotation.Secured;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.validation.Valid;
-import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Collections;
 import java.util.Optional;
 
 
@@ -41,14 +35,6 @@ public class UserController {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
-    private UserHasRoleRepository userHasRoleRepository;
 
     @GetMapping("")
     @Secured("ROLE_USER")
@@ -66,12 +52,9 @@ public class UserController {
             return true;
         }
 
-        userService.checkEmail(request);
         return false;
 
     }
-
-
 
     @PostMapping("/signup")
     public Header<UserApiResponse> create(@Valid @RequestBody Header<UserApiRequest> request) {
@@ -84,42 +67,64 @@ public class UserController {
             throw new EmailExistedException(userData.getEmail());
         }
 
-        String encodedPassword = passwordEncoder.encode(userData.getPassword());
+        User returnData = userService.processNewAccount(userData);
+
+        return Header.OK(response(returnData));
+    }
+
+    @PostMapping("/get-email-token")
+    public String getEmailToken(@RequestBody UserApiRequest request){
+
+        return null;
 
 
+    }
 
-        User newUser = User.builder()
-                .email(userData.getEmail())
-                .name(userData.getName())
-                .password(encodedPassword)
-                .build();
+    /**
+     * email 인증 -> 토큰 발생 및 이메일로 전송
+     */
+    @PostMapping("/send-email-token")
+    public String sendEmailToken(@RequestBody EmailConfirmApiRequest request){
+
+        log.info("??");
+        //유저가 필요함
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email"));
 
 
-        User returnData1 = userRepository.save(newUser);
+        userService.sendEmailConfirmToken(user);
 
-        createUserRole(returnData1.getId());
-
-
-        return Header.OK(response(returnData1));
+        String message = "send to :" + request.getEmail();
+        return message;
     }
 
 
-    public UserHasRole createUserRole(Long userId){
-        User user = userRepository.findById(userId)
-                .orElseThrow(
-                        ()-> new EmailNotExistedException("userId")
-                );
-        Role role = roleRepository.findByName(RoleName.ROLE_USER)
-                .orElseThrow(
-                        ()-> new EmailNotExistedException("roleId")
-                );
+    @Transactional
+    @GetMapping("/check-email-token")
+    public String checkEmailToken(String token, String email){
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email") );
 
-        UserHasRole userHasRole = UserHasRole.builder()
-                    .role(role)
-                    .user(user)
-                    .build();
 
-        return userHasRoleRepository.save(userHasRole);
+        if(!user.getEmailCheckToken().equals(token)){
+            return "wrong token";
+        }
+        user.completeEmailConfirm();
+
+
+        return "complete Email Confirm";
+    }
+
+    @PostMapping("/email-login")
+    public String sendEmailLoginLink(String email, RedirectAttributes attributes) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new UsernameNotFoundException("User not found with email"));
+
+        userService.sendLink(user);
+        log.info( "이메일 인증 메일을 발송했습니다.");
+//        attributes.addFlashAttribute("message", "이메일 인증 메일을 발송했습니다.");
+        return  "이메일 인증 메일을 발송했습니다.";
     }
 
 
