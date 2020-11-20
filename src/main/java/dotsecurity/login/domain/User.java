@@ -9,6 +9,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Entity
@@ -28,9 +29,11 @@ public class User  {
 
     private String password;
 
-    private Integer genre;
+    private boolean emailVerified;
 
-    private String img;
+    private String emailCheckToken;
+
+    private LocalDateTime joinedAt;
 
     private Integer isArtist;
 
@@ -52,6 +55,14 @@ public class User  {
         userRole.setUser(this);
     }
 
+    public void generateEmailCheckToken() {
+        this.emailCheckToken = UUID.randomUUID().toString();
+    }
 
 
+    public void completeEmailConfirm() {
+        this.emailVerified = true;
+        this.joinedAt = LocalDateTime.now();
+
+    }
 }
