@@ -85,9 +85,6 @@ public class UserController {
      */
     @PostMapping("/send-email-token")
     public String sendEmailToken(@RequestBody EmailConfirmApiRequest request){
-
-        log.info("??");
-        //유저가 필요함
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email"));
 
@@ -110,6 +107,10 @@ public class UserController {
             return "wrong token";
         }
         user.completeEmailConfirm();
+
+        if(user.isEmailVerified()){
+            userService.createRoleMember(user.getId());
+        }
 
 
         return "complete Email Confirm";
