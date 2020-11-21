@@ -1,6 +1,7 @@
 package dotsecurity.login.service;
 
 
+import dotsecurity.login.AppProperties;
 import dotsecurity.login.application.exception.EmailNotExistedException;
 import dotsecurity.login.domain.Role;
 import dotsecurity.login.domain.RoleName;
@@ -13,6 +14,7 @@ import dotsecurity.login.mail.EmailMessage;
 import dotsecurity.login.mail.EmailService;
 import dotsecurity.login.network.request.UserApiRequest;
 import dotsecurity.login.security.UserPrincipal;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -21,39 +23,29 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.thymeleaf.TemplateEngine;
+import org.thymeleaf.context.Context;
+import org.thymeleaf.context.IContext;
 
 @Slf4j
 @Service
 @Transactional
+@RequiredArgsConstructor
 public class UserService implements UserDetailsService {
 
-    @Autowired
-    private EmailService emailService;
-
-    private UserRepository userRepository;
-
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
-    private UserHasRoleRepository userHasRoleRepository;
-
-    @Autowired
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
-
-
+    private final EmailService emailService;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final RoleRepository roleRepository;
+    private final UserHasRoleRepository userHasRoleRepository;
+    private final TemplateEngine templateEngine;
+    private final AppProperties appProperties;
 
     @Transactional
     public User processNewAccount(UserApiRequest user) {
         User newUser = createUser(user);
 
-        createUserRole(newUser.getId());
-
+        createRoleCustomer(newUser.getId());
 
         return newUser;
     }
@@ -101,12 +93,30 @@ public class UserService implements UserDetailsService {
     /**
      * 회원가입시 ROLE_USER 자동 부여
      */
-    public UserHasRole createUserRole(Long userId){
+    public UserHasRole createRoleCustomer(Long userId){
         User user = userRepository.findById(userId)
                 .orElseThrow(
                         ()-> new EmailNotExistedException("userId")
                 );
-        Role role = roleRepository.findByName(RoleName.ROLE_USER)
+        Role role = roleRepository.findByName(RoleName.ROLE_CUSTOMER)
+                .orElseThrow(
+                        ()-> new EmailNotExistedException("roleId")
+                );
+
+        UserHasRole userHasRole = UserHasRole.builder()
+                .role(role)
+                .user(user)
+                .build();
+
+        return userHasRoleRepository.save(userHasRole);
+    }
+
+    public UserHasRole createRoleMember(Long userId){
+        User user = userRepository.findById(userId)
+                .orElseThrow(
+                        ()-> new EmailNotExistedException("userId")
+                );
+        Role role = roleRepository.findByName(RoleName.ROLE_MEMBER)
                 .orElseThrow(
                         ()-> new EmailNotExistedException("roleId")
                 );
@@ -120,12 +130,20 @@ public class UserService implements UserDetailsService {
     }
 
     public void sendEmailConfirmToken(User newUser) {
+        Context context = new Context();
+        context.setVariable("link", "/check-email-token?token="+ newUser.getEmailCheckToken() +
+                "&email=" + newUser.getEmail());
+        context.setVariable("nickname", newUser.getName());
+        context.setVariable("linkName", "이메일 인증하기");
+        context.setVariable("message", "블루닷 서비스를 사용하려면 링크를 클릭하세요.");
+        context.setVariable("host", appProperties.getHost());
+
+        String message = templateEngine.process("mail/simple-link", context);
 
         EmailMessage emailMessage = EmailMessage.builder()
                 .to(newUser.getEmail())
-                .subject("닷 스터디, 이메일 인증")
-                .message("/check-email-token?token="+ newUser.getEmailCheckToken() +
-                        "&email=" + newUser.getEmail())
+                .subject("블루닷, 이메일 인증")
+                .message(message)
                 .build();
 
 
