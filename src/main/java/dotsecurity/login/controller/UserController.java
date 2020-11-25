@@ -1,6 +1,7 @@
 package dotsecurity.login.controller;
 
 import dotsecurity.login.application.exception.EmailExistedException;
+import dotsecurity.login.domain.RoleName;
 import dotsecurity.login.domain.User;
 import dotsecurity.login.domain.repository.UserRepository;
 import dotsecurity.login.network.Header;
@@ -37,8 +38,8 @@ public class UserController {
 
 
     @GetMapping("")
-    @Secured("ROLE_USER")
-    @PreAuthorize("hasRole('USER')")
+    @Secured("ROLE_CUSTOMER")
+    @PreAuthorize("hasRole('CUSTOMER')")
     public String home() {
         return "hi hello gonizziwa";
     }
@@ -72,13 +73,6 @@ public class UserController {
         return Header.OK(response(returnData));
     }
 
-    @PostMapping("/get-email-token")
-    public String getEmailToken(@RequestBody UserApiRequest request){
-
-        return null;
-
-
-    }
 
     /**
      * email 인증 -> 토큰 발생 및 이메일로 전송
@@ -95,7 +89,9 @@ public class UserController {
         return message;
     }
 
-
+    /**
+     * email 인증 처리 (token, email)
+     */
     @Transactional
     @GetMapping("/check-email-token")
     public String checkEmailToken(String token, String email){
@@ -109,24 +105,13 @@ public class UserController {
         user.completeEmailConfirm();
 
         if(user.isEmailVerified()){
-            userService.createRoleMember(user.getId());
+            userService.createRoleMember(user.getId(), RoleName.ROLE_MEMBER);
         }
-
 
         return "complete Email Confirm";
     }
 
-    @PostMapping("/email-login")
-    public String sendEmailLoginLink(String email, RedirectAttributes attributes) {
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() ->
-                        new UsernameNotFoundException("User not found with email"));
 
-        userService.sendLink(user);
-        log.info( "이메일 인증 메일을 발송했습니다.");
-//        attributes.addFlashAttribute("message", "이메일 인증 메일을 발송했습니다.");
-        return  "이메일 인증 메일을 발송했습니다.";
-    }
 
 
     public UserApiResponse response(User user) {
@@ -136,7 +121,6 @@ public class UserController {
                 .email(user.getEmail())
                 .name(user.getName())
                 .password(user.getPassword())
-                .roleList(user.getUserRoles())
                 .build();
 
 

@@ -35,7 +35,7 @@ public class User  {
 
     private LocalDateTime joinedAt;
 
-    private Integer isArtist;
+    private boolean isArtist;
 
 //    @ManyToMany(fetch = FetchType.LAZY)
 //    @JoinTable(name = "user_role",
@@ -65,4 +65,9 @@ public class User  {
         this.joinedAt = LocalDateTime.now();
 
     }
+
+    public void artistEnrollment() {
+        this.isArtist = true;
+    }
 }
+

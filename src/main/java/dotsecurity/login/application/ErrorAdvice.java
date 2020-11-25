@@ -1,6 +1,7 @@
 package dotsecurity.login.application;
 
 
+import dotsecurity.login.application.exception.DuplicatedException;
 import dotsecurity.login.application.exception.EmailExistedException;
 import dotsecurity.login.application.exception.EmailNotExistedException;
 import dotsecurity.login.application.exception.PasswordWrongException;
@@ -42,6 +43,17 @@ public class ErrorAdvice {
     @ExceptionHandler(PasswordWrongException.class)
     public String handlePasswordWrong(){
         return "{}";
+    }
+
+
+    /**
+     * 중복 예외처
+     */
+    @ResponseBody
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(DuplicatedException.class)
+    public String handleDuplicatedException(){
+        return "Duplicated Exception ";
     }
 
 
