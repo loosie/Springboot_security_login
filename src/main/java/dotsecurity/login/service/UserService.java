@@ -2,6 +2,8 @@ package dotsecurity.login.service;
 
 
 import dotsecurity.login.AppProperties;
+import dotsecurity.login.application.exception.DuplicatedException;
+import dotsecurity.login.application.exception.EmailExistedException;
 import dotsecurity.login.application.exception.EmailNotExistedException;
 import dotsecurity.login.domain.Role;
 import dotsecurity.login.domain.RoleName;
@@ -12,11 +14,11 @@ import dotsecurity.login.domain.repository.UserHasRoleRepository;
 import dotsecurity.login.domain.repository.UserRepository;
 import dotsecurity.login.mail.EmailMessage;
 import dotsecurity.login.mail.EmailService;
+import dotsecurity.login.network.request.ArtistConfirmApiRequest;
 import dotsecurity.login.network.request.UserApiRequest;
 import dotsecurity.login.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -25,7 +27,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
-import org.thymeleaf.context.IContext;
 
 @Slf4j
 @Service
@@ -45,7 +46,7 @@ public class UserService implements UserDetailsService {
     public User processNewAccount(UserApiRequest user) {
         User newUser = createUser(user);
 
-        createRoleCustomer(newUser.getId());
+        createRoleCustomer(newUser.getId(), RoleName.ROLE_CUSTOMER);
 
         return newUser;
     }
@@ -77,6 +78,16 @@ public class UserService implements UserDetailsService {
      * 회원가입 register User
      */
     public User createUser(UserApiRequest userData) {
+
+        if(userRepository.findByEmail(userData.getEmail()).isPresent()){
+            throw new EmailExistedException(userData.getEmail());
+        }
+
+        if(userRepository.findByName(userData.getName()).isPresent()){
+            throw new DuplicatedException(userData.getName());
+        }
+
+
         String encodedPassword = passwordEncoder.encode(userData.getPassword());
 
         User newUser = User.builder()
@@ -93,12 +104,25 @@ public class UserService implements UserDetailsService {
     /**
      * 회원가입시 ROLE_USER 자동 부여
      */
-    public UserHasRole createRoleCustomer(Long userId){
+    public UserHasRole createRoleCustomer(Long userId, RoleName roleName){
+        return getUserHasRole(userId, roleName);
+    }
+
+    public UserHasRole createRoleMember(Long userId, RoleName roleName){
+        return getUserHasRole(userId, roleName);
+    }
+
+    public UserHasRole createRoleArtist(Long userId, RoleName roleName){
+        return getUserHasRole(userId, roleName);
+    }
+
+    private UserHasRole getUserHasRole(Long userId, RoleName roleName) {
+
         User user = userRepository.findById(userId)
                 .orElseThrow(
                         ()-> new EmailNotExistedException("userId")
                 );
-        Role role = roleRepository.findByName(RoleName.ROLE_CUSTOMER)
+        Role role = roleRepository.findByName(roleName)
                 .orElseThrow(
                         ()-> new EmailNotExistedException("roleId")
                 );
@@ -111,23 +135,7 @@ public class UserService implements UserDetailsService {
         return userHasRoleRepository.save(userHasRole);
     }
 
-    public UserHasRole createRoleMember(Long userId){
-        User user = userRepository.findById(userId)
-                .orElseThrow(
-                        ()-> new EmailNotExistedException("userId")
-                );
-        Role role = roleRepository.findByName(RoleName.ROLE_MEMBER)
-                .orElseThrow(
-                        ()-> new EmailNotExistedException("roleId")
-                );
 
-        UserHasRole userHasRole = UserHasRole.builder()
-                .role(role)
-                .user(user)
-                .build();
-
-        return userHasRoleRepository.save(userHasRole);
-    }
 
     public void sendEmailConfirmToken(User newUser) {
         Context context = new Context();
@@ -150,17 +158,34 @@ public class UserService implements UserDetailsService {
         emailService.sendEmail(emailMessage);
     }
 
-    public void sendLink(User user){
-        EmailMessage emailMessage = EmailMessage.builder()
-                .to(user.getEmail())
-                .subject("닷 스터디, 로그인 링크")
-                .message("/email-confirm?token="+user.getEmailCheckToken() +
-                        "&email=" + user.getEmail())
-                .build();
 
-        emailService.sendEmail(emailMessage);
+    public boolean checkIsEmailConfirmedUser(String email){
 
+        User user = userRepository.findByEmail(email)
+                        .orElseThrow(() -> new EmailNotExistedException(email));
+
+        if(user.isEmailVerified()){
+            return true;
+        }
+
+        return false;
     }
 
 
+    public String checkIsArtistProfile(ArtistConfirmApiRequest request) {
+
+        User user = userRepository.findByEmail(request.getEmail())
+                        .orElseThrow(() -> new UsernameNotFoundException("user not existed"));
+
+        //인증된 이메일인지 확인
+        if(!checkIsEmailConfirmedUser(user.getEmail())){
+            return "Email not confirmed";
+        }
+
+        createRoleArtist(user.getId(), RoleName.ROLE_ARTIST);
+
+        user.artistEnrollment();
+
+        return "success artist";
+    }
 }

@@ -1,10 +1,7 @@
 package dotsecurity.login.security;
 
 import dotsecurity.login.domain.User;
-import io.jsonwebtoken.Claims;
-import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.MalformedJwtException;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import io.jsonwebtoken.security.SignatureException;
 
@@ -20,25 +17,22 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Slf4j
-@Component
+//@Component
 public class JwtTokenProvider {
 
     private Key key;
+    private Date expiryDate;
 
-    @Value("${jwt.secret}")
-    private String secret;
+    public JwtTokenProvider(String secret, int jwtExpInMs){
+        this.key = Keys.hmacShaKeyFor(secret.getBytes());
+        Date time = new Date();
+        expiryDate = new Date(time.getTime() + jwtExpInMs);
 
-    @Value("${jwt.ExpirationInMs}")
-    private int jwtExpInMs;
+    }
 
 
     public String generateToken(Authentication authentication){
         UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
-
-        this.key = Keys.hmacShaKeyFor(secret.getBytes());
-
-        Date time = new Date();
-        Date expiryDate = new Date(time.getTime() + jwtExpInMs);
 
         return Jwts.builder()
                 .setHeader(createHeader())
@@ -52,7 +46,6 @@ public class JwtTokenProvider {
 
     public Long getUserIdFromJwt(String token){
 
-        this.key = Keys.hmacShaKeyFor(secret.getBytes());
         Claims claims = Jwts.parser()
                 .setSigningKey(key)
                 .parseClaimsJws(token)
@@ -66,20 +59,26 @@ public class JwtTokenProvider {
     public boolean validateToken(String authToken){
         try{
 
-            this.key = Keys.hmacShaKeyFor(secret.getBytes());
-
             log.info("validate token : " + authToken);
             Jwts.parser()
                     .setSigningKey(key)
                     .parseClaimsJws(authToken)
                     .getBody();
+
             return true;
         }
         catch (SignatureException ex){
             log.error("InValid JWT Signature");
         }catch (MalformedJwtException ex){
             log.error("InValid JWT token");
+        }catch (ExpiredJwtException ex){
+            log.error("Expired JWT token");
+        }catch (UnsupportedJwtException ex){
+            log.error("Unsupported JWT token");
+        }catch (IllegalArgumentException ex){
+            log.error("JWT claims string is empty");
         }
+
         return false;
 
     }

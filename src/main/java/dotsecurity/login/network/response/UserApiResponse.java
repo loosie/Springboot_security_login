@@ -30,6 +30,5 @@ public class UserApiResponse {
 
     private String password;
 
-    private List<UserHasRole> roleList;
 
 }
