@@ -34,8 +34,10 @@ public class SessionController {
     JwtTokenProvider jwtTokenProvider;
 
 
-    //TODO : 반환값 token으로 변경 (created url해도 되나?)
-    @PostMapping("/session")
+    /**
+     * 로그인
+     */
+    @PostMapping("/login")
     public ResponseEntity<SessionApiResponse> create(@RequestBody SessionApiRequest resource) throws URISyntaxException {
 
 
@@ -44,7 +46,6 @@ public class SessionController {
 
         //(email,password) -> (userId, name)
         User user = sessionService.authenticate(email,password);
-//      String accessToken = jwtUtil.createToken(user.getId(),user.getName());
 
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(email,password)
@@ -63,5 +64,10 @@ public class SessionController {
                         .accessToken(jwt)
                         .build());
     }
+
+
+    /**
+     * 로그아웃 처리
+     */
 
 }

@@ -27,7 +27,11 @@ public class AdminController {
     @PostMapping("/artist-enroll")
     public String giveRoleArtist(@RequestBody ArtistConfirmApiRequest request){
 
-        return userService.checkIsArtistProfile(request);
+        if(!userService.checkIsArtistProfile(request)){
+            return "failure to get role_artist";
+        }
+
+        return "success to get role_artist";
     }
 
 

@@ -69,5 +69,9 @@ public class User  {
     public void artistEnrollment() {
         this.isArtist = true;
     }
+
+    public boolean isValidToken(String token) {
+        return this.emailCheckToken.equals(token);
+    }
 }
 

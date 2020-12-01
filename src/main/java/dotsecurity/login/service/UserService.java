@@ -2,6 +2,7 @@ package dotsecurity.login.service;
 
 
 import dotsecurity.login.AppProperties;
+import dotsecurity.login.application.exception.AuthNotAllowedException;
 import dotsecurity.login.application.exception.DuplicatedException;
 import dotsecurity.login.application.exception.EmailExistedException;
 import dotsecurity.login.application.exception.EmailNotExistedException;
@@ -14,8 +15,10 @@ import dotsecurity.login.domain.repository.UserHasRoleRepository;
 import dotsecurity.login.domain.repository.UserRepository;
 import dotsecurity.login.mail.EmailMessage;
 import dotsecurity.login.mail.EmailService;
+import dotsecurity.login.network.Header;
 import dotsecurity.login.network.request.ArtistConfirmApiRequest;
 import dotsecurity.login.network.request.UserApiRequest;
+import dotsecurity.login.network.response.EmailApiResponse;
 import dotsecurity.login.security.UserPrincipal;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +30,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
+
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -137,7 +142,10 @@ public class UserService implements UserDetailsService {
 
 
 
-    public void sendEmailConfirmToken(User newUser) {
+    public EmailApiResponse sendEmailConfirmToken(String email) {
+        User newUser = userRepository.findByEmail(email)
+                .orElseThrow(() -> new EmailNotExistedException(email));
+
         Context context = new Context();
         context.setVariable("link", "/check-email-token?token="+ newUser.getEmailCheckToken() +
                 "&email=" + newUser.getEmail());
@@ -156,6 +164,10 @@ public class UserService implements UserDetailsService {
 
 
         emailService.sendEmail(emailMessage);
+
+        return EmailApiResponse.builder()
+                .message("send to :" + newUser.getEmail())
+                .build();
     }
 
 
@@ -172,20 +184,54 @@ public class UserService implements UserDetailsService {
     }
 
 
-    public String checkIsArtistProfile(ArtistConfirmApiRequest request) {
+    public boolean checkIsArtistProfile(ArtistConfirmApiRequest request) {
 
         User user = userRepository.findByEmail(request.getEmail())
                         .orElseThrow(() -> new UsernameNotFoundException("user not existed"));
 
         //인증된 이메일인지 확인
         if(!checkIsEmailConfirmedUser(user.getEmail())){
-            return "Email not confirmed";
+            throw new AuthNotAllowedException();
         }
 
         createRoleArtist(user.getId(), RoleName.ROLE_ARTIST);
 
         user.artistEnrollment();
 
-        return "success artist";
+        return true;
+    }
+
+    public EmailApiResponse checkEmailConfirm(String email, String token) {
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("user not existed"));
+
+        if(!user.isValidToken(token)){
+            throw new AuthNotAllowedException();
+        }
+
+        //-- 이메일 인증 완료 user db에 저장 --//
+        user.completeEmailConfirm();
+
+        //-- ROLE_CUSTOMER -> ROLE_MEMBER로 변경 --//
+        if(!user.isEmailVerified()){
+            throw new AuthNotAllowedException();
+        }
+        createRoleMember(user.getId(), RoleName.ROLE_MEMBER);
+
+        return EmailApiResponse.builder()
+                .message("email 인증 완료")
+                .build();
+    }
+
+
+    public boolean emailIsExisted(String email) {
+        Optional<User> existed = userRepository.findByEmail(email);
+
+        if (existed.isPresent()) {
+            return true;
+        }
+
+        return false;
     }
 }

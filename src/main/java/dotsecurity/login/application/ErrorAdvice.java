@@ -1,10 +1,7 @@
 package dotsecurity.login.application;
 
 
-import dotsecurity.login.application.exception.DuplicatedException;
-import dotsecurity.login.application.exception.EmailExistedException;
-import dotsecurity.login.application.exception.EmailNotExistedException;
-import dotsecurity.login.application.exception.PasswordWrongException;
+import dotsecurity.login.application.exception.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -45,7 +42,6 @@ public class ErrorAdvice {
         return "{}";
     }
 
-
     /**
      * 중복 예외처
      */
@@ -55,6 +51,16 @@ public class ErrorAdvice {
     public String handleDuplicatedException(){
         return "Duplicated Exception ";
     }
+
+
+
+    @ResponseBody
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler(AuthNotAllowedException.class)
+    public String handleAuthenticatedException(){
+        return "authN Exception";
+    }
+
 
 
 

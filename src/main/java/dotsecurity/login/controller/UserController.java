@@ -6,7 +6,9 @@ import dotsecurity.login.domain.User;
 import dotsecurity.login.domain.repository.UserRepository;
 import dotsecurity.login.network.Header;
 import dotsecurity.login.network.request.EmailConfirmApiRequest;
+import dotsecurity.login.network.request.SessionApiRequest;
 import dotsecurity.login.network.request.UserApiRequest;
+import dotsecurity.login.network.response.EmailApiResponse;
 import dotsecurity.login.network.response.UserApiResponse;
 import dotsecurity.login.service.UserService;
 import lombok.extern.slf4j.Slf4j;
@@ -45,14 +47,16 @@ public class UserController {
     }
 
     @PostMapping("/email")
-    public boolean email(@RequestBody Header<UserApiRequest> request) throws URISyntaxException {
-        UserApiRequest userData = request.getData();
-        Optional<User> existed = userRepository.findByEmail(userData.getEmail());
+    public boolean email(@RequestBody SessionApiRequest request) throws URISyntaxException {
+        String userEmail = request.getEmail();
 
-        if (existed.isPresent()) {
+        // 이메일 존재하면 true
+        if(userService.emailIsExisted(userEmail)) {
+            log.info("email-check : " + request.getEmail());
             return true;
         }
 
+        // 이메일 존재x false;
         return false;
 
     }
@@ -61,16 +65,14 @@ public class UserController {
     public Header<UserApiResponse> create(@Valid @RequestBody Header<UserApiRequest> request) {
         UserApiRequest userData = request.getData();
 
-        Optional<User> existed = userRepository.findByEmail(userData.getEmail());
-
-        //존재하는 이메일 예외처리
-        if (existed.isPresent()) {
-            throw new EmailExistedException(userData.getEmail());
-        }
-
         User returnData = userService.processNewAccount(userData);
 
-        return Header.OK(response(returnData));
+        return Header.OK(UserApiResponse.builder()
+                .id(returnData.getId())
+                .email(returnData.getEmail())
+                .name(returnData.getName())
+                .password(returnData.getPassword())
+                .build());
     }
 
 
@@ -79,14 +81,12 @@ public class UserController {
      */
     @PostMapping("/send-email-token")
     public String sendEmailToken(@RequestBody EmailConfirmApiRequest request){
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email"));
 
+        EmailApiResponse res = userService.sendEmailConfirmToken(request.getEmail());
 
-        userService.sendEmailConfirmToken(user);
+        log.info("send to :" + request.getEmail());
 
-        String message = "send to :" + request.getEmail();
-        return message;
+        return res.getMessage();
     }
 
     /**
@@ -94,38 +94,15 @@ public class UserController {
      */
     @Transactional
     @GetMapping("/check-email-token")
-    public String checkEmailToken(String token, String email){
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email") );
+    public String checkEmailToken(EmailConfirmApiRequest request){
 
+        EmailApiResponse res = userService.checkEmailConfirm(request.getEmail(), request.getToken());
 
-        if(!user.getEmailCheckToken().equals(token)){
-            return "wrong token";
-        }
-        user.completeEmailConfirm();
+        log.info("email 인증 완료");
 
-        if(user.isEmailVerified()){
-            userService.createRoleMember(user.getId(), RoleName.ROLE_MEMBER);
-        }
-
-        return "complete Email Confirm";
+        return res.getMessage();
     }
 
-
-
-
-    public UserApiResponse response(User user) {
-
-        UserApiResponse userApiResponse = UserApiResponse.builder()
-                .id(user.getId())
-                .email(user.getEmail())
-                .name(user.getName())
-                .password(user.getPassword())
-                .build();
-
-
-        return userApiResponse;
-    }
 
 
 }

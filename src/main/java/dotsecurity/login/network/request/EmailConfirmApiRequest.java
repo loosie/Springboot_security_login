@@ -5,9 +5,7 @@ import lombok.Data;
 @Data
 public class EmailConfirmApiRequest {
 
-
     private String email;
-
-
+    private String token;
 
 }
