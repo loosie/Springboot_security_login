@@ -1,10 +1,7 @@
 package dotsecurity.login.domain;
 
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
@@ -12,6 +9,7 @@ import java.util.List;
 
 @Getter
 @Builder
+@Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity

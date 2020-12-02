@@ -15,7 +15,6 @@ import dotsecurity.login.domain.repository.UserHasRoleRepository;
 import dotsecurity.login.domain.repository.UserRepository;
 import dotsecurity.login.mail.EmailMessage;
 import dotsecurity.login.mail.EmailService;
-import dotsecurity.login.network.Header;
 import dotsecurity.login.network.request.ArtistConfirmApiRequest;
 import dotsecurity.login.network.request.UserApiRequest;
 import dotsecurity.login.network.response.EmailApiResponse;

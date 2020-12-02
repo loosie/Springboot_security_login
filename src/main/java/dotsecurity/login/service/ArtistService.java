@@ -1,17 +1,12 @@
 package dotsecurity.login.service;
 
-import dotsecurity.login.application.exception.AuthNotAllowedException;
 import dotsecurity.login.application.exception.DuplicatedException;
-import dotsecurity.login.application.exception.EmailExistedException;
 import dotsecurity.login.domain.Artist;
-import dotsecurity.login.domain.RoleName;
 import dotsecurity.login.domain.User;
 import dotsecurity.login.domain.repository.ArtistRepository;
 import dotsecurity.login.domain.repository.UserRepository;
 import dotsecurity.login.network.request.ArtistConfirmApiRequest;
-import dotsecurity.login.network.request.UserApiRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
