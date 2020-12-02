@@ -5,8 +5,7 @@ import lombok.Data;
 
 @Builder
 @Data
-public class EmailApiResponse {
+public class ConfirmApiResponse {
 
-    private boolean check;
     private String message;
 }

@@ -88,8 +88,8 @@ public class UserService implements UserDetailsService {
             throw new EmailExistedException(userData.getEmail());
         }
 
-        if(userRepository.findByName(userData.getName()).isPresent()){
-            throw new DuplicatedException(userData.getName());
+        if(userRepository.findByNickname(userData.getNickname()).isPresent()){
+            throw new DuplicatedException(userData.getNickname());
         }
 
 
@@ -98,6 +98,7 @@ public class UserService implements UserDetailsService {
         User newUser = User.builder()
                 .email(userData.getEmail())
                 .name(userData.getName())
+                .nickname(userData.getNickname())
                 .password(encodedPassword)
                 .build();
         //이메일 인증 토큰 생성
@@ -162,6 +163,10 @@ public class UserService implements UserDetailsService {
                 .message(message)
                 .build();
 
+        //테스트용 나중에는 꼭 지워야 됨
+        log.info("/check-email-token?token="+ newUser.getEmailCheckToken() +
+                "&email=" + newUser.getEmail());
+
 
         emailService.sendEmail(emailMessage);
 
@@ -195,7 +200,6 @@ public class UserService implements UserDetailsService {
         }
 
         createRoleArtist(user.getId(), RoleName.ROLE_ARTIST);
-
         user.artistEnrollment();
 
         return true;

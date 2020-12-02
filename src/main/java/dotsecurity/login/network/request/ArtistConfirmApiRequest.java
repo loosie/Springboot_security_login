@@ -9,9 +9,11 @@ public class ArtistConfirmApiRequest {
 
     private String artistName;
 
-    private String genre;
+    private String description;
 
-    private String introduction;
+    private String profileImg;
+
+    private String genre;
 
     private String socialLink;
 }

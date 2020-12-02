@@ -28,6 +28,8 @@ public class UserApiResponse {
 
     private String name;
 
+    private String nickname;
+
     private String password;
 
 

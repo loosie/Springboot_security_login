@@ -38,11 +38,11 @@ public class SessionController {
      * 로그인
      */
     @PostMapping("/login")
-    public ResponseEntity<SessionApiResponse> create(@RequestBody SessionApiRequest resource) throws URISyntaxException {
+    public Header<ResponseEntity<SessionApiResponse>> create(@RequestBody Header<SessionApiRequest> resource) throws URISyntaxException {
 
-
-        String email = resource.getEmail();
-        String password = resource.getPassword();
+        SessionApiRequest data = resource.getData();
+        String email = data.getEmail();
+        String password = data.getPassword();
 
         //(email,password) -> (userId, name)
         User user = sessionService.authenticate(email,password);
@@ -56,13 +56,15 @@ public class SessionController {
         String jwt = jwtTokenProvider.generateToken(authentication);
 
 
-        String url = "/session";
+        String url = "/user" + user.getId();
 
-        return ResponseEntity.created(new URI(url)).body(
-                SessionApiResponse.builder()
+        return Header.OK(
+                ResponseEntity.created(new URI(url)).body(
+                        SessionApiResponse.builder()
                         .name(user.getName())
                         .accessToken(jwt)
-                        .build());
+                        .build())
+                        );
     }
 
 

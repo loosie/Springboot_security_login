@@ -1,6 +1,9 @@
 package dotsecurity.login.controller;
 
+import dotsecurity.login.network.Header;
 import dotsecurity.login.network.request.ArtistConfirmApiRequest;
+import dotsecurity.login.network.response.ConfirmApiResponse;
+import dotsecurity.login.service.ArtistService;
 import dotsecurity.login.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -10,9 +13,11 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class AdminController {
 
-
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private ArtistService artistService;
 
 
     /**
@@ -25,13 +30,23 @@ public class AdminController {
      * 아티스트 등록
      */
     @PostMapping("/artist-enroll")
-    public String giveRoleArtist(@RequestBody ArtistConfirmApiRequest request){
+    public Header<ConfirmApiResponse> giveRoleArtist(@RequestBody Header<ArtistConfirmApiRequest> request){
 
-        if(!userService.checkIsArtistProfile(request)){
-            return "failure to get role_artist";
+        ArtistConfirmApiRequest data = request.getData();
+
+        // 이메일 인증 여부 확인 후 isArtist = true
+        if(!userService.checkIsArtistProfile(data)){
+
+            return Header.ERROR("failure to get role_artist");
         }
 
-        return "success to get role_artist";
+        Long id = artistService.createArtist(data);
+
+        return Header.OK(
+                    ConfirmApiResponse.builder()
+                            .message("success to get role_artist; artist_id :" +id)
+                            .build()
+                        );
     }
 
 

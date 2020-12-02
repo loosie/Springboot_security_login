@@ -28,6 +28,8 @@ public class UserApiRequest {
 
     private String name;
 
+    private String nickname;
+
     private String password;
 
     private List<UserHasRole> roleList;
