@@ -1,6 +1,7 @@
 package dotsecurity.login.domain.repository;
 
 import dotsecurity.login.domain.Artist;
+import dotsecurity.login.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

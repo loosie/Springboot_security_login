@@ -43,7 +43,7 @@ public class ErrorAdvice {
     }
 
     /**
-     * 중복 예외처
+     * 중복 예외처리
      */
     @ResponseBody
     @ResponseStatus(HttpStatus.BAD_REQUEST)
